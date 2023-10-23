@@ -1,0 +1,146 @@
+---
+- name: Test Subscription Manager Status
+  shell: |
+    set pipefail
+
+    subscription-manager status | grep 'Overall Status' | awk '{ print $3 }'
+  ignore_errors: true
+  register: redhat_subscription_status
+  tags:
+    - subscription_manager_tasks
+    - register_subscription
+
+- name: Clear Subscription Data to Ensure Correct Settings
+  shell: |
+    subscription-manager clean
+  when:
+    - redhat_subscription_status.stdout is ne 'Current'
+  tags:
+    - subscription_manager_tasks
+    - register_subscription
+
+- name: Test if katello-ca-consumer-latest is installed
+  shell: |
+    set pipefail
+
+    dnf list installed | grep katello-ca-consumer
+  register: katello_status
+  ignore_errors: true
+  when:
+    - satellite_url is defined
+  tags:
+    - subscription_manager_tasks
+    - register_subscription
+
+- name: Install katello-ca-consumer-latest RPM
+  shell: |
+    dnf -Uvh {{ satellite_url }}/pub/katello-ca-consumer-latest.noarch.rpm
+  when:
+    - katello_status.rc is defined
+    - katello_status.rc is ne 0
+    - satellite_url is defined
+  tags:
+    - subscription_manager_tasks
+    - register_subscription
+
+- name: Registering System with Subscription Manager
+  redhat_subscription:
+    username: '{{ item.subscription_user }}'
+    password: '{{ item.subscription_password }}'
+    org_id: '{{ item.org_id | default(omit) }}'
+    activationkey: '{{ item.activation_key | default(omit) }}'
+    release: '{{ item.release | default(omit) }}'
+  with_items: '{{ subscription_registration_info }}'
+  when:
+    - redhat_subscription_status.stdout is ne 'Current'
+  no_log: true
+  tags:
+    - subscription_manager_tasks
+    - register_subscription
+
+- name: Test if Entitlement is Attached
+  command: subscription-manager list --consumed
+  ignore_errors: true
+  register: pool_attached
+  tags:
+    - subscription_manager_tasks
+    - attach_subscription_pool
+
+- name: Find Entitlement Pool
+  shell: |
+    set pipefail
+
+    subscription-manager list --available --all \
+    '--matches={{ entitlement_match | default("*") }}' \
+    --pool-only | cut -d$'\n' -f1
+  when:
+    - pool_attached.stdout is eq 'No consumed subscription pools were found.'
+  register: pool_id
+  tags:
+    - subscription_manager_tasks
+    - consume_entitlement
+
+- name: Attach Entitlements
+  command: subscription-manager attach '--pool={{ pool_id.stdout }}'
+  when:
+    - pool_attached.stdout is eq 'No consumed subscription pools were found.'
+  tags:
+    - subscription_manager_tasks
+    - attach_subscription_pool
+
+  #TODO: Add conditionals to the following below once sattelite goes live
+- name: Disable Default Repositories
+  command: subscription-manager repos --disable=*
+  when:
+    - pool_attached.stdout is eq 'No consumed subscription pools were found.'
+  tags:
+    - subscription_manager_tasks
+
+- name: Enable Required Repositories
+  shell: >
+    subscription-manager repos
+    {%- for repos in repos_to_enable %}
+    --enable={{ repos|e }}
+    {% endfor %}
+  when:
+    - repos_to_enable is defined
+    - pool_attached.stdout is eq 'No consumed subscription pools were found.'
+  tags:
+    - subscription_manager_tasks
+
+- name: Disable System Repository Modules
+  shell: >
+    dnf module disable -y \
+    {% for modules in modules_to_disable %}
+    {{ modules|e }}
+    {% endfor %}
+  when:
+    - modules_to_disable is defined
+  tags:
+    - subscription_manager_tasks
+
+- name: Enable Required Repository Modules
+  shell: >
+    dnf module enable -y \
+    {% for modules in modules_to_enable %}
+    {{ modules|e }}
+    {% endfor %}
+  when:
+    - modules_to_enable is defined
+  tags:
+    - subscription_manager_tasks
+
+- name: Update System to latest Base Packages
+  dnf:
+    name: '*'
+    state: latest
+  register: update_status
+  tags:
+    - subscription_manager_tasks
+
+- name: Reboot System
+  reboot:
+  tags:
+    - subscription_manager_tasks
+  when:
+    - update_status.msg is ne 'Nothing to do'

@@ -1,0 +1,40 @@
+---
+- name: Create Directories for Templates
+  file:
+    path: '{{ ssl_dir_path | default("/etc/pki/tls/certs") }}'
+    owner: '{{ stack_user }}'
+    mode: 0750
+    state: directory
+  tags:
+    - create_ssl_certs
+
+- name: Generate OpenSSL Private Key
+  openssl_privatekey:
+    path: '{{ ssl_privatekey_path | default("/etc/pki/tls/private/privkey.pem") }}'
+    size: '{{ ssl_key_size | default(omit) }}'
+  register: ssl_privatekey
+  tags:
+    - create_ssl_certs
+
+- name: Generate OpenSSL Cert Sigining Request
+  openssl_csr:
+    path: '{{ ssl_csr_path | default("/etc/pki/tls/misc/certificate.csr") }}'
+    privatekey_path: '{{ ssl_privatekey.filename }}'
+    common_name: '{{ csr_common_name | default(omit) }}'
+    country_name: '{{ csr_country_code | default(omit) }}'
+    organization_name: '{{ csr_org_name | default(omit) }}'
+    email_address: '{{ csr_email_address | default(omit) }}'
+    subject_alt_name: '{{ csr_subject_alt_name | default(omit) }}'
+  register: ssl_csr
+  tags:
+    - create_ssl_certs
+
+- name: Generate OpenSSL Certificate
+  openssl_certificate:
+    path: '{{ ssl_certificate_path | default("/etc/pki/tls/certs/cert.crt") }}'
+    privatekey_path: '{{ ssl_privatekey.filename }}'
+    csr_path: '{{ ssl_csr.filename }}'
+    provider: '{{ openssl_provider | default("selfsigned") }}'
+  register: ssl_certificate
+  tags:
+    - create_ssl_certs

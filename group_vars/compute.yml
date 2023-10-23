@@ -1,0 +1,5 @@
+---
+pm_type: 'ilo'
+pm_user: #TODO VAULTED
+pm_password: #TODO VAULTED
+overcloud_node_profile: 'profile:compute,boot_option:uefi'

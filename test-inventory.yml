@@ -1,0 +1,113 @@
+all:
+  children:
+    director:
+      hosts:
+        10.0.2.9:
+
+    overcloud:
+      children:
+        compute:
+          hosts:
+            192.168.30.231:
+              name: 'compute-01'
+              pm_type: 'ilo'
+              pm_user: 'fusion.ans'
+              pm_password: 'test'
+              pm_addr: '192.168.20.231'
+              pm_port: 22
+              mac:
+                - 'bb:bb:bb:bb:bb:bb'
+                - 'aa:aa:aa:aa:aa:aa'
+              cpu: 4
+              arch: 'x86_64'
+          
+            192.168.30.131:
+              name: 'compute-02'
+              pm_type: 'staging-ovirt'
+              pm_user: 'admin@internal'
+              pm_password: 'testovirt'
+              pm_addr: '192.168.30.100'
+              mac:
+                - 'bb:bb:bb:aa:aa:aa'
+                - 'aa:aa:aa:bb:bb:bb'
+              cpu: 2
+              arch: 'x86_64'
+          
+            192.168.30.233:
+              name: 'compute-03'
+              pm_type: 'ipmi'
+              pm_addr: '192.168.20.233'
+          
+            192.168.30.133:
+            192.168.30.235:
+            192.168.30.135:
+            192.168.30.237:
+            192.168.30.137:
+        
+        controller:
+          hosts:
+            192.168.30.120:
+              name: 'controller-01'
+              pm_type: 'redfish'
+              pm_user: 'fusion.ans'
+              pm_password: 'test'
+              pm_addr: '192.168.20.120'
+              pm_port: 22
+              pm_system_id: '/redfish/v1/Systems/CX34R87'
+              redfish_verify_ca: 'testredfish'
+              mac:
+                - 'bb:bb:bb:ff:ff:ff'
+                - 'aa:aa:aa:ff:ff:ff'
+              cpu: 4
+              arch: 'x86_64'
+          
+            192.168.30.130:
+              name: 'controller-02'
+              pm_type: 'redfish'
+              pm_user: 'fusion.ans'
+              pm_password: 'test'
+              pm_addr: '192.168.20.130'
+              redfish_verfiy_ca: 'testredfish'
+              mac:
+                - 'ee:ee:bb:ff:ff:ff'
+                - 'aa:ee:ee:ff:ff:ff'
+              cpu: 4
+              arch: 'x86_64'
+          
+            192.168.30.140:
+              name: 'controller-03'
+              pm_type: 'redfish'
+              pm_user: 'fusion.ans'
+              pm_password: 'test'
+              pm_addr: '192.168.20.140'
+              pm_system_id: '/redfish/v1/Systems/CX34R87'
+              cpu: 4
+              arch: 'x86_64'
+        
+        storage:
+          children:
+            ceph_storage:
+              hosts:
+                192.168.30.224:
+                  name: 'ceph-store-01'
+                  pm_type: 'irmc'
+                  pm_user: 'fusion.ans'
+                  pm_password: 'test'
+                  pm_addr: '192.168.20.224'
+                  pm_port: 22
+                  pm_auth_method: 'digest'
+                  pm_client_timeout: 30
+                  pm_sensor_method: 'scci'
+                192.168.30.124:
+                  name: 'ceph-store-02'
+                  pm_type: 'irmc'
+                  pm_user: 'fusion.ans'
+                  pm_password: 'test'
+                  pm_addr: '192.168.20.124'
+                  pm_sensor_method: 'scci'
+                192.168.30.228:
+                  name: 'ceph-store-03'
+                  pm_type: 'manual-management'
+                  pm_user: 'fusion.ans'
+                  pm_password: 'test'
+                  pm_addr: '192.168.20.228'

@@ -1,0 +1,101 @@
+---
+- name: Prepare Satellite Server for Container Images
+  block:
+    - name: Create New Container Product in Satellite Org
+      shell: >
+        hammer product create --organization '{{ item.org }}'
+        --name '{{ item.product }}'
+      with_items: '{{ container_image_registry }}'
+  
+    - name: Add Base Container Image to Product
+      shell: >
+        hammer repository create
+        --organization '{{ item.org }}'
+        --product '{{ item.product }}'
+        --content-type '{{ item.content_type }}'
+        --url '{{ item.url }}'
+        --docker-upstream-name '{{ item.base_upstream_name }}'
+        --upstream-username '{{ item.username }}'
+        --upstream-password '{{ item.password }}'
+        --name '{{ item.base_image_name }}'
+      with_items: '{{ container_image_registry }}'
+  
+    - name: Add Overcloud Images
+      shell: |
+        set pipefail
+  
+        while read IMAGE; do IMAGENAME=$(echo $IMAGE | cut -d"/" -f2 | sed \
+        "s/openstack-//g" | sed "s/:.*//g") ; \
+        hammer repository create --organization '{{ item.org }}' \
+        --product '{{ item.product }}' \
+        --content-type '{{ item.content_type }}' \
+        --url '{{ item.url }}' \
+        --docker-upstream-name $IMAGE \
+        --upstream-username '{{ item.username }}' \
+        --upstream-password '{{ item.password }}' \
+        --name $IMAGENAME ; done < '{{ satellite_images.stdout }}'
+      with_items: '{{ container_image_registry }}'
+  
+    - name: Add Ceph Storage 4 Container Image to Product
+      shell: >
+        hammer repository create
+        --organization '{{ item.org }}'
+        --product '{{ item.product }}'
+        --content-type '{{ item.content_type }}'
+        --url '{{ item.url }}'
+        --docker-upstream-name '{{ item.ceph_upstream_name }}'
+        --upstream-username '{{ item.username }}'
+        --upstream-password '{{ item.password }}'
+        --name '{{ item.ceph_image_name }}'
+      with_items: '{{ container_image_registry }}'
+      when:
+        - container_image_registry.ceph_upstream_name is defined
+  
+    - name: Synchronize Container Images
+      shell: >
+        hammer product sychronize
+        --organization '{{ item.org }}'
+        --name '{{ item.product }}'
+      with_items: '{{ container_image_registry }}'
+      
+    - name: Check if Content View Exists
+      shell: |
+        hammer repository list --content-view '{{ item.content_view_name }}'
+      with_items: '{{ container_image_registry }}'
+      ignore_errors: true
+      register: content_view_exists
+
+    - name: Create Content View and Add Repos
+      shell: >
+        hammer content-view create
+        --name '{{ item.content_view_name }}'
+        {% if container_image_registry.content_view_description is defined %}
+        --description '{{ item.content_view_description }}'
+        {% endif %}
+        --repository-ids #TODO
+        --organization '{{ item.org }}'
+      with_items: '{{ container_image_registry }}'
+      when:
+        - content_view_exists.stdout != 0
+  
+      #TODO: ADD IMAGES TO CONTENT VIEWS; NEED REPO IDS
+  
+    - name: Check Available Tags for Base Images
+      shell: >
+        hammer docker tag list --repository '{{ item.base_image_name }}'
+        --organization '{{ item.org }}'
+        --lifecyle-environment '{{ item.lifecyle_environment }}'
+        --content-view '{{ item.content_view }}'
+        --product '{{ item.product }}'
+      with_items: '{{ container_image_registry }}'
+
+  delegate_to: "{{ groups['satellite_servers'] }}"
+  become_user: '{{ satellite_priv_user }}'
+  no_log: true
+  when:
+    - satellite_url is defined
+    - satellite_registry_address is defined
+    - groups['satellite_servers'] is defined
+    - container_image_registry is defined
+  tags:
+    - satellite_image_prep

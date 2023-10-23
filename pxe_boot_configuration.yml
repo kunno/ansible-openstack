@@ -1,0 +1,30 @@
+---
+- name: Install Packages for ILO PXE Boot
+  dnf:
+    name: python3-proliantutils
+    state: present
+  loop: '{{ enabled_hardware_types }}'
+  when: 
+    - "'ilo' is in item"
+  tags:
+    - configure_pxe
+
+- name: Install Packages for iRMC PXE Boot
+  dnf:
+    name: python3-scciclient
+    state: present
+  loop: '{{ enabled_hardware_types }}'
+  when: 
+    - "'irmc' is in item"
+  tags:
+    - configure_pxe
+
+- name: Restart Conductor Service
+  service:
+    name: tripleo-ironic-conductor
+    state: restarted
+  loop: '{{ enabled_hardware_types }}'
+  when: 
+    - "'ilo' or 'irmc' is in item"
+  tags:
+    - configure_pxe

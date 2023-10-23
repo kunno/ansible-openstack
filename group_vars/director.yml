@@ -1,0 +1,608 @@
+---
+#
+# From undercloud_config
+#
+
+# List of additional architectures enabled in your cloud environment.
+# The list of supported values is: ppc64le (list value)
+#additional_architectures:
+
+# The certmonger nickname of the CA from which the certificate will be
+# requested. This is used only if the generate_cert
+# option is set. Note that if the "local" CA is selected the
+# certmonger's local CA certificate will be extracted to /etc/pki/ca-
+# trust/source/anchors/cm-local-ca.pem and subsequently added to the
+# trust chain. (string value)
+certificate_generation_ca: local
+
+# Whether to clean overcloud nodes (wipe the hard drive) between
+# deployments and after the introspection. (boolean value)
+clean_nodes: false
+
+# Cleanup temporary files. Setting this to False will leave the
+# temporary files used during deployment in place after the command is
+# run. This is useful for debugging the generated files or if errors
+# occur. (boolean value)
+cleanup: true
+
+# Container CLI used for deployment; Can be docker or podman. (string
+# value)
+container_cli: podman
+
+# Whether or not we disable the container healthchecks. (boolean
+# value)
+container_healthcheck_disabled: false
+
+# REQUIRED if authentication is needed to fetch containers. This file
+# should contain values for "ContainerImagePrepare" and
+# "ContainerImageRegistryCredentials" that will be used to fetch the
+# containers for the undercloud installation. `openstack tripleo
+# container image prepare default` can be used to provide a sample
+# "ContainerImagePrepare" value. Alternatively this file can contain
+# all the required Heat parameters for the containers for advanced
+# configurations. (string value)
+container_images_file: /home/stack/templates/containers-prepare-parameter.yaml
+
+# Used to add custom insecure registries for containers. (list value)
+# Deprecated group/name - [DEFAULT]/docker_insecure_registries
+#container_insecure_registries:
+
+# An optional container registry mirror that will be used. (string
+# value)
+# Deprecated group/name - [DEFAULT]/docker_registry_mirror
+#container_registry_mirror:
+
+# List of any custom environment yaml files to use. These are applied
+# after any other configuration and can be used to override any
+# derived values. This should be used only by advanced users. (list
+# value)
+#custom_env_files:
+
+# User used to run openstack undercloud install command which will be
+# used to add the user to the docker group, required to upload
+# containers (string value)
+deployment_user: '{{ ansible_user }}'
+
+# The default driver or hardware type to use for newly discovered
+# nodes (requires enable_node_discovery set to True). It is
+# automatically added to enabled_hardware_types. (string value)
+discovery_default_driver: ilo
+
+# DEPRECATED: Docker bridge IP for the undercloud. (string value)
+# This option is deprecated for removal.
+# Its value may be silently ignored in the future.
+#docker_bip: --bip=172.31.0.1/24
+
+# Whether to install the Volume service. It is not currently used in
+# the undercloud. (boolean value)
+enable_cinder: false
+
+# Whether to enable the ironic service. (boolean value)
+enable_ironic: true
+
+# Whether to enable the ironic inspector service. (boolean value)
+enable_ironic_inspector: true
+
+# Whether to enable the mistral service. (boolean value)
+enable_mistral: true
+
+# Makes ironic-inspector enroll any unknown node that PXE-boots
+# introspection ramdisk in Ironic. By default, the "fake" driver is
+# used for new nodes (it is automatically enabled when this option is
+# set to True). Set discovery_default_driver to override.
+# Introspection rules can also be used to specify driver information
+# for newly enrolled nodes. (boolean value)
+enable_node_discovery: false
+
+# Whether to enable the nova service. (boolean value)
+enable_nova: true
+
+# Whether to install novajoin metadata service in the Undercloud.
+# (boolean value)
+enable_novajoin: false
+
+# Enable support for routed ctlplane networks. (boolean value)
+enable_routed_networks: false
+
+# Whether to enable Swift encryption at-rest or not. (boolean value)
+enable_swift_encryption: false
+
+# Whether to install Telemetry services (ceilometer, gnocchi, aodh) in
+# the Undercloud. (boolean value)
+enable_telemetry: false
+
+# Whether to install Tempest in the Undercloud.This is a no-op for
+# containerized undercloud. (boolean value)
+enable_tempest: true
+
+# Whether to install requirements to run the TripleO validations.
+# (boolean value)
+enable_validations: true
+
+# Whether to enable the zaqar service. (boolean value)
+enable_zaqar: true
+
+# List of enabled bare metal hardware types (next generation drivers).
+# (list value)
+enabled_hardware_types: 
+  - ipmi
+  - redfish
+  - ilo
+  - idrac
+
+# When set to True, an SSL certificate will be generated as part of
+# the undercloud install and this certificate will be used in place of
+# the value for undercloud_service_certificate.  The resulting
+# certificate will be written to
+# /etc/pki/tls/private/overcloud_endpoint.pem. This certificate is
+# signed by CA selected by the "certificate_generation_ca" option.
+# (boolean value)
+generate_cert: true
+
+# URL for the heat container image to use. (string value)
+#heat_container_image:
+
+# Execute the heat-all process natively on this host. This option
+# requires that the heat-all binaries be installed locally on this
+# machine. This option is enabled by default which means heat-all is
+# executed on the host OS  directly. (boolean value)
+#heat_native: true
+
+# Path to hieradata override file. Relative paths get computed inside
+# of $HOME. When it points to a heat env file, it is passed in t-h-t
+# via "-e <file>", as is. When the file contains legacy instack data,
+# it is wrapped with UndercloudExtraConfig and also passed in for
+# t-h-t as a temp file created in output_dir. Note, instack hiera data
+# may be not t-h-t compatible and will highly likely require a manual
+# revision. (string value)
+#hieradata_override:
+
+# Whether to enable extra hardware collection during the inspection
+# process. Requires python-hardware or python-hardware-detect package
+# on the introspection image. (boolean value)
+inspection_extras: true
+
+# Network interface on which inspection dnsmasq will listen.  If in
+# doubt, use the default value. (string value)
+# Deprecated group/name - [DEFAULT]/discovery_interface
+inspection_interface: br-ctlplane
+
+# Whether to run benchmarks when inspecting nodes. Requires
+# inspection_extras set to True. (boolean value)
+# Deprecated group/name - [DEFAULT]/discovery_runbench
+inspection_runbench: true
+
+# One Time Password to register Undercloud node with an IPA server.
+# Required when enable_novajoin: True. (string value)
+#ipa_otp:
+
+# IPv6 address configuration mode for the undercloud provisioning
+# network. (string value)
+# Possible values:
+# dhcpv6-stateless - Address configuration using RA and optional
+# information using DHCPv6.
+# dhcpv6-stateful - Address configuration and optional information
+# using DHCPv6.
+#ipv6_address_mode: dhcpv6-stateless
+
+# Whether to use iPXE for deploy and inspection. (boolean value)
+# Deprecated group/name - [DEFAULT]/ipm_deploy
+#ipm_enabled: true
+
+# Ironic network interface implementation to use by default. (string
+# value)
+# Possible values:
+# flat - Use one flat provider network.
+# neutron - Ironic interacts with Neutron to enable other network
+# types and advanced networking features.
+#ironic_default_network_interface: flat
+
+# Enabled ironic network interface implementations. Each hardware type
+# must have at least one valid implementation enabled. (list value)
+#ironic_enabled_network_interfaces: flat
+
+# Network interface on the Undercloud that will be handling the PXE
+# boots and DHCP for Overcloud instances. (string value)
+local_interface: '{{ ansible_default_ipv4.interface }}'
+
+# IP information for the interface on the Undercloud that will be
+# handling the PXE boots and DHCP for Overcloud instances.  The IP
+# portion of the value will be assigned to the network interface
+# defined by local_interface, with the netmask defined by the prefix
+# portion of the value. (string value)
+local_ip: '{{ ansible_default_ipv4.address }}/24'
+
+# MTU to use for the local_interface. (integer value)
+local_mtu: 1500
+
+# Name of the local subnet, where the PXE boot and DHCP interfaces for
+# overcloud instances is located. The IP address of the
+# local_ip/local_interface should reside in this subnet. (string
+# value)
+local_subnet: ctlplane-subnet
+
+# Path to network config override template. Relative paths get
+# computed inside of $HOME. Must be in the json format. Its content
+# overrides anything in t-h-t <role>NetConfigOverride. The processed
+# template is then passed in Heat via the generated parameters file
+# created in output_dir and used to configure the networking via run-
+# os-net-config. If you wish to disable you can set this location to
+# an empty file. Templated for instack j2 tags may be used, for
+# example:
+#
+# "network_config": [
+#  {
+#   "type": "ovs_bridge",
+#   "name": "br-ctlplane",
+#   "ovs_extra": [
+#    "br-set-external-id br-ctlplane bridge-id br-ctlplane"
+#   ],
+#   "members": [
+#    {
+#     "type": "interface",
+#     "name": "{{LOCAL_INTERFACE}}",
+#     "primary": "true",
+#     "mtu": {{LOCAL_MTU}},
+#     "dns_servers": {{UNDERCLOUD_NAMESERVERS}}
+#    }
+#   ],
+#   "addresses": [
+#     {
+#       "ip_netmask": "{{PUBLIC_INTERFACE_IP}}"
+#     }
+#   ],
+#   "routes": {{SUBNETS_STATIC_ROUTES}},
+#   "mtu": {{LOCAL_MTU}}
+# }
+# ]
+#   (string value)
+#net_config_override: /home/stack/templates/net-config.json
+
+# Networks file to override for heat. May be an absolute path or the
+# path relative to the t-h-t templates directory used for deployment
+# (string value)
+#networks_file: <None>
+
+# Directory to output state, processed heat templates, ansible
+# deployment files. (string value)
+#output_dir: /builddir
+
+# DNS domain name to use when deploying the overcloud. The overcloud
+# parameter "CloudDomain" must be set to a matching value. (string
+# value)
+#overcloud_domain_name: localdomain
+
+# Roles file to override for heat. May be an absolute path or the path
+# relative to the t-h-t templates directory used for deployment
+# (string value)
+#roles_file: <None>
+
+# Maximum number of attempts the scheduler will make when deploying
+# the instance. You should keep it greater or equal to the number of
+# bare metal nodes you expect to deploy at once to work around
+# potential race condition when scheduling. (integer value)
+# Minimum value: 1
+scheduler_max_attempts: 15
+
+# The kerberos principal for the service that will use the
+# certificate. This is only needed if your CA requires a kerberos
+# principal. e.g. with FreeIPA. (string value)
+#service_principal:
+
+# List of routed network subnets for provisioning and introspection.
+# Comma separated list of names/tags. For each network a section/group
+# needs to be added to the configuration file with these parameters
+# set: cidr, dhcp_start, dhcp_end, inspection_iprange, gateway and
+# masquerade_network. Note: The section/group must be placed before or
+# after any other section. (See the example section [ctlplane-subnet]
+# in the sample configuration file.) (list value)
+subnets:
+  - ctlplane-subnet
+
+# heat templates file to override. (string value)
+#templates:
+
+# Virtual IP or DNS address to use for the admin endpoints of
+# Undercloud services. Only used with SSL. (string value)
+# Deprecated group/name - [DEFAULT]/undercloud_admin_vip
+undercloud_admin_host: 10.0.2.9
+
+# Whether to enable the debug log level for Undercloud OpenStack
+# services and Container Image Prepare step. (boolean value)
+undercloud_debug: true
+
+# Enable or disable Paunch to manage containers. (boolean value)
+undercloud_enable_paunch: false
+
+# Enable or disable SELinux during the deployment. (boolean value)
+undercloud_enable_selinux: true
+
+# Fully qualified hostname (including domain) to set on the
+# Undercloud. If left unset, the current hostname will be used, but
+# the user is responsible for configuring all system hostname settings
+# appropriately.  If set, the undercloud install will configure all
+# system hostname settings. (string value)
+undercloud_hostname: 'director-01.fusion.lab'
+
+# The path to a log file to store the undercloud install/upgrade logs.
+# (string value)
+#undercloud_log_file: install-undercloud.log
+
+# DNS nameserver(s). Use for the undercloud node and for the overcloud
+# nodes. (NOTE: To use different nameserver(s) for the overcloud,
+# override the DnsServers parameter in overcloud environment.) (list
+# value)
+#undercloud_nameservers: #TODO
+
+# List of ntp servers to use. (list value)
+undercloud_ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+  - 3.pool.ntp.org
+
+# Virtual IP or DNS address to use for the public endpoints of
+# Undercloud services. Only used with SSL. (string value)
+# Deprecated group/name - [DEFAULT]/undercloud_public_vip
+undercloud_public_host: 10.0.2.10
+
+# Certificate file to use for OpenStack service SSL connections.
+# Setting this enables SSL for the OpenStack API endpoints, leaving it
+# unset disables SSL. (string value)
+undercloud_service_certificate: /etc/pki/ca-trust/source/anchors/cm-local-ca.pem
+
+# Host timezone to be used. If no timezone is specified, the existing
+# timezone configuration is used. (string value)
+#undercloud_timezone: <None>
+
+# Whether to update packages during the Undercloud install. This is a
+# no-op for containerized undercloud. (boolean value)
+#undercloud_update_packages: false
+
+# (Experimental) Whether to clean undercloud rpms after an upgrade to
+# a containerized undercloud. (boolean value)
+#upgrade_cleanup: false
+
+# Network CIDR for the Neutron-managed subnet for Overcloud instances.
+# (string value)
+# Deprecated group/name - [DEFAULT]/network_cidr
+cidr: 10.0.2.0/24 
+
+# End of DHCP allocation range for PXE and DHCP of Overcloud instances
+# on this network. (list value)
+# Deprecated group/name - [DEFAULT]/dhcp_end
+dhcp_end: #TODO
+  - 10.0.2.200
+
+# List of IP addresses or IP ranges to exclude from the subnets
+# allocation pool. Example: 192.168.24.50,192.168.24.80-192.168.24.90
+# (list value)
+#dhcp_exclude:
+
+# Start of DHCP allocation range for PXE and DHCP of Overcloud
+# instances on this network. (list value)
+# Deprecated group/name - [DEFAULT]/dhcp_start
+dhcp_start: #TODO
+  - 10.0.2.100
+
+# DNS nameservers for the Neutron-managed subnet for the Overcloud
+# instances on this network. If no nameservers are defined for the
+# subnet, the nameservers defined for undercloud_nameservers will be
+# used. (list value)
+#dns_nameservers:
+
+# Network gateway for the Neutron-managed network for Overcloud
+# instances on this network. (string value)
+# Deprecated group/name - [DEFAULT]/network_gateway
+gateway: '{{ ansible_default_ipv4.gateway }}' #TODO
+
+# Host routes for the Neutron-managed subnet for the Overcloud
+# instances on this network. The host routes on the local_subnet will
+# also be configured on the undercloud. (list value)
+#
+# This option has a sample default set, which means that
+# its actual default value may vary from the one documented
+# below.
+#host_routes: [{destination: 10.10.10.0/24, nexthop: 192.168.24.1}]
+
+# Temporary IP range that will be given to nodes on this network
+# during the inspection process. Should not overlap with the range
+# defined by dhcp_start and dhcp_end, but should be in the same ip
+# subnet. (string value)
+# Deprecated group/name - [DEFAULT]/inspection_iprange
+inspection_iprange: #TODO 
+ - 192.168.24.100
+ - 192.168.24.120
+
+# The network will be masqueraded for external access. (boolean value)
+#masquerade: false
+
+
+stack_user: '{{ ansible_user }}'
+stack_password: '{{ ansible_password }}'
+rhosp_directory: '/usr/share/rhosp-director-images'
+repos_to_enable:
+#  - rhel-8-for-x86_64-baseos-eus-rpms
+#  - rhel-8-for-x86_64-appstream-eus-rpms
+#  - rhel-8-for-x86_64-highavailability-eus-rpms
+  - rhel-8-for-x86_64-baseos-rpms
+  - rhel-8-for-x86_64-appstream-rpms
+  - rhel-8-for-x86_64-highavailability-rpms
+  - ansible-2.9-for-rhel-8-x86_64-rpms
+  - advanced-virt-for-rhel-8-x86_64-rpms
+  - satellite-tools-6.5-for-rhel-8-x86_64-rpms
+  - openstack-16.1-for-rhel-8-x86_64-rpms
+  - fast-datapath-for-rhel-8-x86_64-rpms
+# Ceph Repos (separate subscription required)
+# - openstack-16.1-deployment-tools-for-rhel-8-x86_64-rpms
+# - rhceph-4-osd-for-rhel-8-x86_64-rpms
+# - rhceph-4-mon-for-rhel-8-x86_64-rpms
+# - rhceph-4-tools-for-rhel-8-x86_64-rpms
+# Real Time Repos (separate subscription required)
+# - rhel-8-for-x86_64-rt-rpms
+# - rhel-8-for-x86_64-nfv-rpms
+# IBM POWER Repos (separate subscription required)
+# - rhel-8-for-ppc64le-baseos-rpms
+# - rhel-8-for-ppc64le-appstream-rpms
+# - rhel-8-for-ppc64le-highavailability-rpms
+# - ansible-2.9-for-rhel-8-ppc64le-rpms
+# - openstack-16.1-for-rhel8-ppc64le-rpms
+modules_to_disable:
+  - container-tools:rhel8
+  - virt:8.2
+modules_to_enable:
+  - container-tools:2.0
+  - virt:8.2
+packages_to_install:
+  - python3-tripleoclient
+# - ceph-ansible
+overcloud_images:
+#Director images for environments with single arch overcloud
+  - rhosp-director-images
+  - rhosp-director-images-ipa
+#Director images for environments with multi arch overcloud
+# - rhosp-director-images-all
+#Director images for environments with no OSP services or entitlements
+  - rhosp-director-images-minimal
+overcloud_image_path:
+  - '{{ rhosp_directory }}/overcloud-full-latest-16.1.tar'
+  - '{{ rhosp_directory }}/ironic-python-agent-latest-16.1.tar'
+#Overcloud image path for multi arch environments
+# - '{{ rhosp_directory }}/overcloud-full-latest-16.1-${arch}.tar'
+# - '{{ rhosp_directory }}/ironic-python-agent-latest-16.1-${arch}.tar'
+#Overcloud image path for minimal environments
+# - '{{ rhosp_directory }}/overcloud-minimal-latest-16.1.tar'
+entitlement_match: 'Red Hat OpenStack'
+#ssl_dir_path:
+#ssl_privatekey_path: #TODO
+#ssl_certificate_path: #TODO
+subscription_registration_info:
+  - subscription_user: !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            63656631333564643336333730303736363834396230323263363934636239646631633530356135
+            6337333638376464633339646262646237643638613838360a333361316638396365316437626166
+            35653238303732316334663264643466393933313630346235316634396464666364663738323561
+            6263303631393366630a353231333534393361356237323730323930623139616439386239333966
+            6265
+    subscription_password: !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            35353439346263383634306363373765653237656532346262306334653837653534363964313561
+            6466663361326363643536343133643232613366663930360a623531643532303765656265346238
+            36613665626363303761396437306435316463623039633331623735346631623937376236386432
+            3763306537663733660a613864353138306434396233373864633064616235666530343365623537
+            62613431306430663835376436386539666562623433643934353964323966393364
+    release: 8.2
+#   org_id: #TODO
+#   activation_key: #TODO
+satellite_registry_address: satellite.example.com:5000 #TODO  
+satellite_url: satellite.example.com #TODO
+satellite_priv_user: #TODO
+satellite_priv_pass: #TODO
+undercloud_registry: true 
+container_image_registry:
+  - address: registry.redhat.io
+    org: 'ACME'
+    product: 'OSP16.1 Containers'
+    content_type: docker
+    url: https://registry.redhat.io
+    base_upstream_name: rhosp-rhel8/openstack-base
+    base_image_name: base
+    content_view: 'myosp16_1' #TODO: EXAMPLE NAME CHANGE
+    content_view_name: #TODO
+    content_view_description: #TODO
+    lifecycle_environment: 'production' #TODO
+#   ceph_image_name: #TODO
+#   ceph_upstream_name: #TODO
+    username: !vault |
+              $ANSIBLE_VAULT;1.1;AES256
+              64373332353938336234363635303161393165653339323734386635396539633563633966366235
+              3237663238623665383365656531663330663934313566620a346161366264373233653164633131
+              35393862336164393363366130626466313364383938623231306665623535306263303330646337
+              3930333965613432340a346335653661653432666136353763306563343932656231336161386336
+              38396330633866336637613538623264333837346361336136646662336230393436
+    password: !vault |
+              $ANSIBLE_VAULT;1.1;AES256
+              63313134663738643738346633306236613838643236373664656362386331343030393838373466
+              3334393031323663353761336639346664646466616133630a663437313137383739383931306363
+              61333335633737306436616533613566643630373933313562336332386533336261633735353963
+              6239323465643733380a626661353061666130333931643434316365656431663530623264663461
+              62323533393165636563623262393462663366623263336262653461643137616434366638653536
+              30393736353539366463646134373235386236373664306534393534656334616232353564666263
+              30626336373339373363343062653236383336636337313436323164396266303939376331663664
+              37346566313436363064386466646465373134383666303362363430336166393562636663633466
+              37353662643037343337643837653636336137326261613362613465323866633265663138343330
+              34333335373739656237616530646435643332653736366563666662636365383462323564353965
+              34646461636363306233623739633263326432306136373033323632306666616364636461396262
+              63353039366335666364366636623866346366393834393232316264656236376663663337663362
+              62646238633734356466643765363838353336613630643132333666646165616535393231313737
+              38623262633837376230386139363466316164316366336436383430653431393936343334623836
+              33363139336262316430623436356630623839623730653334376139366234323236303764346130
+              64656432396534363963333462663466666663656162643161396661336635313434633464333031
+              39633965663865336439326635306362353531666231373261323465613439623561376165326633
+              65336263343735323865623639636635336436316666356363656461373763376232613935666632
+              30623761343666643833646136333330386430656263376238623563333730353732623135313637
+              31666430313335383739636332353761306664373933316638363464633231316234616461303532
+              30353565643136316565376136383266373262373131323039636666663633623438353130646361
+              36643265646661313039656266326432633933616366646363386334373335616564383331626232
+              33306166336635633734306139656332383233323162626564666262323837366635366531346338
+              33363965663466613737663937313466343035396363353735636239613835306337356131363536
+              61353762636237333566336436633433333338643361306561306632393366373935343063313566
+              62323337613431623837326233346165626231303365346363363535396264643437363835623263
+              37623732373437303937353931323335303330396566356435613730356161663539666336323263
+              35306161343832393937356530323031383461653137633636393566323833333033333635353964
+              39376134356637353735323566356466323966663739663065373662623930623235366435333061
+              33373966323562313761643463636237633336656566636430663362353636353236383231303930
+              31633062353536656465633431653063306338323066333137313833383765383831373238656438
+              65616665373434646339313735386133616139633231613536306262366432316263383630376530
+              32656339613361343033626261393461396632633436646338333438386237656465626232303930
+              65303861393265646564393039613331326535646439316430336634633232386637666364313838
+              62323836313637386163656261636461306236333438646364336635623435333333373365343530
+              31306231643864623763333039666630643437623330336235666164356335306238316234636664
+              65636161303732376238643262643734613438346464363330323564306265616634636261333264
+              35386364343738613265643035323332333933633934313466326234663834303134663739356138
+              30383265373562613138373439363837393930393235646130373131396538353036313132636266
+              30626337623865303632376261356339643930663438323938633664643434393237663861613336
+              34303536326635343261323634623231626234666366306634373366383734346532383338346134
+              3034313762396537666162346438333332653237323135306433
+# Add arguments to customize overcloud deployment
+cloud_deploy_args:
+  - --templates
+  - -e /home/stack/templates/nodes-flavor-control.yml
+  - -e /home/stack/templates/network-isolation.yml
+  - -e /home/stack/templates/other-network-templates.yml
+  - -e /home/stack/templates/external-load-balancer.yml
+  - -e /home/stack/templates/storage-env-files.yml
+  - -e /home/stack/templates/satellite-reg.yml
+  - -e /home/stack/templates/other-env-config.yml
+#  - 'any other flags as available in overcloud deploy'
+# ADD PROXY TO UNDERCLOUD
+#proxy_settings:
+#  http:
+#    - 'https://ADDPROXYIP:PROT/'
+#  https:
+#    - 'https://ADDPROXYIP:PORT/'
+#  no_proxy:
+#    - '127.0.0.1'
+#    - '172.16.0.0/16'
+#    - '172.17.0.0/16'
+#    - 'HOSTNAME.ctlplane.localdomain'
+#For CA & SSL CERTS
+#csr_country_code: #OPTIONAL
+#csr_subject_alt_name: #OPTIONAL
+#csr_email_address: #OPTIONAL
+#csr_common_name: #OPTIONAL
+#ssl_key_size: #OPTIONAL
+#csr_org_name #OPTIONAL
+#open_ssl_provider: #OPTIONAL
+#EXAMPLE BOND CREATION W/ IFs
+#CAN CREATE MULTIPLE BONDS AND IFs AT ONCE
+#nmcli_bond:
+#  - conn_name: 'bond30',
+#    ip4: '{{ ansible_default_ipv4.address }}',
+#    gw4: '{{ ansible_default_ipv4.gateway }}',
+#    ifname: 'bond30',
+#    mode: '802.3ad'
+#nmcli_interfaces:
+#  - conn_name: 'bond30-iface1',
+#    ifname: '{{ ansible_default_ipv4.interface }}',
+#    master: 'bond30'

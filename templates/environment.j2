@@ -1,0 +1,11 @@
+{% if proxy_settings is defined %}
+{% if proxy_settings.http is defined %}
+http_proxy={{ proxy_settings.http | join(',') }}
+{% endif %}
+{% if proxy_settings.https is defined %}
+https_proxy={{ proxy_settings.https | join(',') }}
+{% endif %}
+{% if proxy_settings.no_proxy is defined %}
+no_proxy={{ proxy_settings.no_proxy | join(',') }}
+{% endif %}
+{% endif %}

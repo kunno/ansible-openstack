@@ -1,0 +1,7 @@
+---
+pm_type: 'staging-ovirt'
+pm_user: #TODO
+pm_password: #TODO VAULTED
+#ip address of rhv api
+pm_addr: '192.168.30.100'
+overcloud_node_profile: 'profile:control,boot_option:local'

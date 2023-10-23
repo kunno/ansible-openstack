@@ -1,0 +1,195 @@
+---
+- name: Create Network Bonding
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Create Network Bonding
+      import_tasks: network_bonding.yml
+      when:
+        - nmcli_bond is defined
+        - nmcli_interface is defined
+      tags:
+        - undercloud_pre_tasks
+
+- name: OpenStack Undercloud Installation & Configuration
+  hosts: director
+
+  pre_tasks:
+    - name: Create CA and Generate Cert
+      import_tasks: create_certs.yml
+      become: true
+      when:
+        - generate_cert is undefined or generate_cert is sameas false
+      tags:
+        - undercloud_pre_tasks
+
+  #TODO: FINISH CONDITIONAL TASKS
+  tasks:
+    - name: Create Directories for Templates
+      file:
+        path: '/home/{{ stack_user }}/templates'
+        owner: '{{ stack_user }}'
+        group: '{{ stack_user }}'
+        mode: 0755
+        state: directory
+      tags:
+        - undercloud_tasks
+        - create_dir
+
+    - name: Create Directories for Images
+      file:
+        path: '/home/{{ stack_user }}/images'
+        owner: '{{ stack_user }}'
+        group: '{{ stack_user }}'
+        mode: 0755
+        state: directory
+      tags:
+        - undercloud_tasks
+        - create_dir
+
+    - name: Check Undercloud Hostname
+      command: hostname -f
+      register: hostname_set
+      ignore_errors: true
+      tags:
+        - undercloud_tasks
+        - set_hostname
+
+    - name: Set System Hostname
+      hostname:
+        name: '{{ undercloud_hostname }}'
+      when:
+        - undercloud_hostname is defined
+        - hostname_set.stdout is ne undercloud_hostname
+      tags:
+        - undercloud_tasks
+        - set_hostname
+
+    - name: Add Entry for System Hostname to hosts file
+      lineinfile:
+        path: /etc/hosts
+        line: >-
+          {{ ansible_default_ipv4.address }}   {{ ansible_fqdn }}
+          {{ ansible_hostname }}
+        owner: '{{ stack_user }}'
+        group: '{{ stack_user }}'
+        mode: 0640
+        create: true
+      become: true
+      when:
+        - undercloud_hostname is defined
+      tags:
+        - undercloud_tasks
+        - set_hostname
+
+    - name: Register Node with Subscription Manager
+      import_tasks: subscription_manager_registration.yml
+      become: true
+      tags:
+        - undercloud_tasks
+        - node_subscription_registration
+
+    - name: Install Undercloud Packages
+      dnf:
+        name: '{{ item }}'
+        state: present
+      become: true
+      loop: '{{ packages_to_install }}'
+      tags:
+        - undercloud_tasks
+
+    - name: Setup Undercloud Proxy
+      template:
+        src: templates/environment.j2
+        dest: /etc/environment
+        mode: 0644
+        owner: root
+        group: root
+      when:
+        - proxy_settings is defined
+      tags:
+        - undercloud_tasks
+
+    - name: Copy Undercloud Template to Node
+      template:
+        src: templates/undercloud.conf.j2
+        dest: '/home/{{ stack_user }}/undercloud.conf'
+        mode: 0644
+        owner: '{{ stack_user }}'
+        group: '{{ stack_user }}'
+      tags:
+        - undercloud_tasks
+
+    - name: Create List of All Container Images
+      shell: |
+        set pipefail
+    
+        podman search --limit 1000 "registry.redhat.io/rhosp" | grep rhosp-rhel8 |
+        awk '{ print $2 }' | grep -v beta | sed "s/registry.redhat.io\///g" |
+        tail -n+2
+      register: satellite_images
+      tags:
+        - undercloud_tasks
+        - satellite_image_prep
+    
+    - name: Prepare Satellite Server for Container Images
+      import_tasks: satellite_container_images_prep.yml
+      tags:
+        - undercloud_tasks
+        - satellite_image_prep
+
+    - name: Prepare Container Images
+      shell: >
+        openstack tripleo container image prepare default
+        {% if undercloud_registry is sameas true %}
+        --local-push-destination
+        {% endif %}
+        --output-env-file
+        {{ container_images_file }}
+      tags:
+        - undercloud_tasks
+
+    - name: Add Container Image Registry Credentials
+      blockinfile:
+        path: '{{ container_images_file }}'
+        block: |2
+            ContainerImageRegistryCredentials:
+          {% for item in container_image_registry %}
+              {{ item.address }}:
+                {{ item.username }}: '{{ item.password }}'
+          {% endfor %}
+            ContainerImageRegistryLogin: true
+      no_log: true
+      when:
+        - container_image_registry is defined
+      tags:
+        - undercloud_tasks
+
+    - name: Update Registry Namespace
+      replace:
+        path: '{{ container_images_file }}'
+        regexp: 'registry.redhat.io'
+        replace: '{{ satellite_registry_address }}'
+      when:
+        - satellite_registry_address is defined
+        - satellite_url is defined
+      tags:
+        - undercloud_tasks
+
+    - name: Install Director
+      command: openstack undercloud install
+      tags:
+        - undercloud_tasks
+
+    - name: Check Enabled Containers
+      command: podman ps
+      tags:
+        - undercloud_tasks
+
+  post_tasks:
+    - name: Install PXE Boot Packages for Undercloud Access
+      import_tasks: pxe_boot_configuration.yml
+
+    - name: Configure Director for Overcloud Deployment
+      import_tasks: overcloud_configuration.yml

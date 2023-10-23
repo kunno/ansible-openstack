@@ -1,0 +1,47 @@
+nodes:
+{% for host in groups.overcloud %}
+  - pm_type: '{{ hostvars[host].pm_type | mandatory }}'
+{% if hostvars[host].pm_type != 'manual-management' %}
+    name: '{{ hostvars[host].name | mandatory }}'
+    pm_user: '{{ hostvars[host].pm_user | mandatory }}'
+    pm_password: '{{ hostvars[host].pm_password | mandatory }}'
+    pm_addr: '{{ hostvars[host].pm_addr | mandatory }}'
+    capabilities: '{{ hostvars[host].overcloud_node_profile | mandatory }}'
+{% if hostvars[host].mac is defined %}
+    mac:
+{% for address in hostvars[host].mac %}
+      - {{ address }}
+{% endfor %}
+{% endif %}
+{% if hostvars[host].memory is defined %}
+    memory: {{ hostvars[host].memory }}
+{%  endif %}
+{% if hostvars[host].cpu is defined %}
+    cpu: {{ hostvars[host].cpu }}
+{% endif %}
+{% if hostvars[host].pm_port is defined %}
+    pm_port: {{ hostvars[host].pm_port }}
+{% endif %}
+{% if hostvars[host].pm_type == 'redfish' %}
+{% if hostvars[host].pm_system_id is defined %}
+    pm_system_id: '{{ hostvars[host].pm_system_id }}'
+{% endif %}
+    redfish_verify_ca: {{ hostvars[host].redfish_verify_ca | default(false) }}
+{% endif %}
+{% if hostvars[host].pm_type == 'irmc' %}
+{% if hostvars[host].pm_auth_method is defined %}
+    pm_auth_method: '{{ hostvars[host].pm_auth_method }}'
+{% endif %}
+{% if hostvars[host].pm_client_timeout is defined %}
+    pm_client_timeout: {{ hostvars[host].pm_client_timeout }}
+{% endif %}
+{% if hostvars[host].pm_sensor_method is defined %}
+    pm_sensor_method: '{{ hostvars[host].pm_sensor_method }}'
+{% endif %}
+{% endif %}
+{% if hostvars[host].pm_type == 'staging-ovirt' %}
+    pm_vm_name: '{{ hostvars[host].pm_vm_name | default(host|e) }}'
+{% endif %}
+{% endif %}
+
+{% endfor %}

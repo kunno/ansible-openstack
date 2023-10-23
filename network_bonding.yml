@@ -1,0 +1,38 @@
+---
+- name: Create a Network Bond Interface
+  nmcli:
+    type: '{{ item.type | default("bond") }}'
+    conn_name: '{{ item.conn_name }}'
+    ip4: '{{ item.ip4 }}'
+    gw4: '{{ item.gw4 }}'
+    ifname: '{{ item.ifname }}'
+    mode: '{{ item.mode }}'
+    miimon: '{{ item.miimon | default(omit) }}'
+    state: '{{ item.state | default(present) }}'
+  when: 
+    - nmcli_bond is defined
+    - nmcli_interface is defined
+  with_items:
+    - '{{ nmcli_bond }}'
+
+- name: Add Interfaces to the Bond
+  nmcli:
+    type: '{{ item.type | default("bond-slave") }}'
+    conn_name: '{{ item.conn_name }}'
+    ifname: '{{ item.ifname }}'
+    master: '{{ item.master | default(omit) }}'
+    state: '{{ item.state | default(present) }}'
+  when: 
+    - nmcli_bond is defined
+    - nmcli_interface is defined
+  with_items:
+    - '{{ nmcli_interfaces }}'
+
+- name: Switch Default Interface to Bond
+  shell: |
+    ifdown {{ item.ifname }}
+  become: yes
+  with_items:
+    - '{{ nmcli_interfaces }}'
+  when:
+    - item.default is sameas true

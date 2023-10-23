@@ -1,0 +1,239 @@
+---
+- name: Obtain Images for Overcloud Nodes
+  dnf:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ overcloud_images }}'
+  become: true
+  when:
+    - overcloud_images is defined
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Copy and Unpack Image Archives to images dir
+  unarchive:
+    src: '{{ item }}'
+#TODO: Find better creates qualifier
+    creates: 'home/{{ stack_user }}/images/*'
+    dest: '/home/{{ stack_user }}/images'
+    remote_src: yes
+  loop: '{{ overcloud_image_path }}'
+  become: true
+  when:
+    - overcloud_images is defined
+    - overcloud_image_path is defined
+    - rhosp_directory is defined
+    - "'rhosp-director-images' is in overcloud_images"
+    - "'rhosp-director-images-ipa' is in overcloud_images"
+    - "'rhosp-director-images-all' is not in overcloud_images"
+    - "'rhosp-director-images-minimal' is not in overcloud_images"
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Copy and Unpack Image Archives to images dir
+  unarchive:
+    src: '{{ item }}'
+#TODO: Find better creates qualifier
+    creates: 'home/{{ stack_user }}/images/*'
+    dest: '/home/{{ stack_user }}/images'
+    remote_src: yes
+  loop: '{{ overcloud_image_path }}'
+  become: true
+  when:
+    - overcloud_images is defined
+    - overcloud_image_path is defined
+    - rhosp_directory is defined
+    - "'rhosp-director-images-minimal' is in overcloud_images"
+    - "'rhosp-director-images-ipa' is not in overcloud_images"
+    - "'rhosp-director-images-all' is not in overcloud_images"
+    - "'rhosp-director-images' is not in overcloud_images"
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Import Images to Director and Verify Successful Import
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack overcloud image upload \
+    --image-path '/home/{{ stack_user }}/images/' \
+    --os-image-name overcloud-minimal.qcow2
+
+    openstack image list
+  when:
+    - overcloud_images is defined
+    - overcloud_image_path is defined
+    - rhosp_directory is defined
+    - "'rhosp-director-images-minimal' is in overcloud_images"
+    - "'rhosp-director-images-ipa' is not in overcloud_images"
+    - "'rhosp-director-images-all' is not in overcloud_images"
+    - "'rhosp-director-images' is not in overcloud_images"
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Import Images to Director and Verify Successful Import
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack overcloud image upload \
+    --image-path '/home/{{ stack_user }}/images/'
+
+    openstack image list
+
+    ls -al /var/lib/ironic/httpboot
+  when:
+    - overcloud_images is defined
+    - overcloud_image_path is defined
+    - rhosp_directory is defined
+    - "'rhosp-director-images' is in overcloud_images"
+    - "'rhosp-director-images-ipa' is in overcloud_images"
+    - "'rhosp-director-images-all' is not in overcloud_images"
+    - "'rhosp-director-images-minimal' is not in overcloud_images"
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Copy and Unpack Image Archives to images dir
+  shell: >
+    for arch in x86_64 ppc64le ; do mkdir $arch ; do for i in
+    {% for item in overcloud_image_path %}
+    {{ item|e }}
+    {% endfor %}
+    ; do tar -C $arch -xf $i ; done ; done ; done
+  become: true
+  when:
+    - overcloud_images is defined
+    - overcloud_image_path is defined
+    - rhosp_directory is defined
+    - "'rhosp-director-images' is not in overcloud_images"
+    - "'rhosp-director-images-minimal' is not in overcloud_images"
+    - "'rhosp-director-images-ipa' is not in overcloud_images"
+    - "'rhosp-director-images-all' is in overcloud_images"
+  args:
+    chdir: '/home/{{ stack_user }}/images'
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Import Images to Director and Verify Successful Import
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack overcloud image upload --local \
+    --image-path '/home/{{ stack_user }}/images/ppc64le' \
+    --architecture pp64le --whole-disk \
+    --http-boot /var/lib/ironic/tftpboot/ppc64le
+
+    openstack overcloud image upload --local \
+    --image-path '/home/{{ stack_user }}/images/x86_64' \
+    --http-boot /var/lib/ironic/tftpboot
+
+    openstack image list
+
+    ls -al /var/lib/ironic/tftpboot /var/lib/ironic/tftpboot/ppc64le
+  when:
+    - overcloud_images is defined
+    - overcloud_image_path is defined
+    - rhosp_directory is defined
+    - "'rhosp-director-images' is not in overcloud_images"
+    - "'rhosp-director-images-minimal' is not in overcloud_images"
+    - "'rhosp-director-images-ipa' is not in overcloud_images"
+    - "'rhosp-director-images-all' is in overcloud_images"
+  args:
+    chdir: '/home/{{ stack_user }}/images'
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Set Name Servers for Control Plane
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack subnet set \
+    {% for item in dns_nameservers %}
+    --dns-nameserver {{ item|e }} 
+    {%- endfor %}
+    ctlplane-subnet
+
+    openstack subnet show ctlplane-subnet
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Copy Overcloud Node Definition Template to Director
+  template:
+    src: templates/nodes.j2
+    dest: '/home/{{ stack_user }}/templates/nodes.yml'
+    mode: 0644
+    owner: '{{ stack_user }}'
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Validate Node Config for the Overcloud
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack overcloud node import \
+    --validate-only '/home/{{ stack_user }}/nodes.yml'
+  register: overcloud_node_config_status
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Register Nodes for the Overcloud
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack overcloud node import \
+    '/home/{{ stack_user }}/nodes.yml'
+  when:
+    - overcloud_node_config_status.rc is eq 0
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: List Nodes for the Overcloud
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack baremetal node list
+  register: overcloud_node_list
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Introspect Nodes for the Overcloud (Usually takes 15 mins)
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack tripleo validator run --group pre-introspection
+
+    openstack overcloud node introspect --all-manageable --provide
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Verify Overcloud Profiles
+  shell: |
+    source '/home/{{ stack_user }}/stackrc'
+
+    openstack overcloud profiles list
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
+
+- name: Deploy Overcloud
+  shell: >
+    openstack overcloud deploy
+    {% if cloud_deploy_args is defined %}
+    {% for args in cloud_deploy_args %}
+    {{ args|e }}
+    {% endif %}
+    {% endfor %}
+  tags:
+    - undercloud_tasks
+    - overcloud_prep
